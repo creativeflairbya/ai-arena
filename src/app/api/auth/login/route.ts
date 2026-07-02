@@ -1,69 +1,57 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { verifyPassword, createSessionToken, setSessionCookie } from "@/lib/auth";
-import { z } from "zod";
+import { NextRequest, NextResponse } from 'next/server';
+import { authenticateUser, createToken } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
-const Body = z.object({
-  email: z.string().email().toLowerCase().trim(),
-  password: z.string().min(1),
-});
-
-export async function POST(req: NextRequest) {
-  let body: unknown;
+export async function POST(request: NextRequest) {
   try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-  const parsed = Body.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Email and password are required" },
-      { status: 400 },
-    );
-  }
-  const { email, password } = parsed.data;
+    const body = await request.json();
+    const { email, password } = body;
 
-  const [user] = await db.select().from(users).where(eq(users.email, email));
-  if (!user) {
-    return NextResponse.json(
-      { error: "No account found with that email. Please check and try again." },
-      { status: 401 },
-    );
-  }
-  if (!user.isActive) {
-    return NextResponse.json(
-      { error: "This account has been deactivated. Contact support." },
-      { status: 403 },
-    );
-  }
-  const ok = await verifyPassword(password, user.passwordHash);
-  if (!ok) {
-    return NextResponse.json(
-      { error: "Incorrect password. Please try again." },
-      { status: 401 },
-    );
-  }
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: 'Email and password are required' },
+        { status: 400 }
+      );
+    }
 
-  const token = await createSessionToken({
-    id: user.id,
-    email: user.email,
-    role: user.role,
-  });
-  await setSessionCookie(token);
+    const user = await authenticateUser(email, password);
 
-  return NextResponse.json({
-    ok: true,
-    user: {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      credits: user.credits,
-      isUnlimited: user.isUnlimited,
-      plan: user.plan,
-    },
-  });
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Invalid email or password' },
+        { status: 401 }
+      );
+    }
+
+    const token = await createToken(user);
+    
+    const response = NextResponse.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        credits: user.credits,
+        subscriptionTier: user.subscriptionTier,
+      },
+    });
+
+    // Set cookie on the response object
+    response.cookies.set('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
+
+    return response;
+  } catch (error) {
+    console.error('Login error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 }

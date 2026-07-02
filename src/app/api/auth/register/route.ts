@@ -1,87 +1,81 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import {
-  hashPassword,
-  createSessionToken,
-  setSessionCookie,
-} from "@/lib/auth";
-import { z } from "zod";
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/db';
+import { users } from '@/db/schema';
+import { hashPassword, createToken } from '@/lib/auth';
+import { eq } from 'drizzle-orm';
+import { cookies } from 'next/headers';
 
-const Body = z.object({
-  email: z.string().email().toLowerCase().trim(),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  name: z.string().min(2).max(60),
-});
-
-const COLORS = [
-  "#8b5cf6", "#ec4899", "#06b6d4", "#10b981",
-  "#f59e0b", "#ef4444", "#3b82f6", "#a855f7",
-];
-
-export async function POST(req: NextRequest) {
-  let body: unknown;
+export async function POST(request: NextRequest) {
   try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-  const parsed = Body.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Invalid input" },
-      { status: 400 },
-    );
-  }
-  const { email, password, name } = parsed.data;
+    const body = await request.json();
+    const { email, password, name } = body;
 
-  const existing = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, email));
-  if (existing.length > 0) {
-    return NextResponse.json(
-      { error: "An account with that email already exists." },
-      { status: 409 },
-    );
-  }
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: 'Email and password are required' },
+        { status: 400 }
+      );
+    }
 
-  const passwordHash = await hashPassword(password);
-  const avatarColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+    // Check if user already exists
+    const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    
+    if (existingUser.length > 0) {
+      return NextResponse.json(
+        { error: 'User with this email already exists' },
+        { status: 400 }
+      );
+    }
 
-  const [created] = await db
-    .insert(users)
-    .values({
+    const hashedPassword = await hashPassword(password);
+
+    const newUser = await db.insert(users).values({
       email,
-      passwordHash,
-      name,
-      role: "user",
-      plan: "free",
-      credits: 50,
-      isUnlimited: false,
-      isActive: true,
-      avatarColor,
-    })
-    .returning();
+      password: hashedPassword,
+      name: name || null,
+      role: 'user',
+      credits: 100, // Free tier starts with 100 credits
+      subscriptionTier: 'free',
+      subscriptionStatus: 'active',
+    }).returning();
 
-  const token = await createSessionToken({
-    id: created.id,
-    email: created.email,
-    role: created.role,
-  });
-  await setSessionCookie(token);
+    const user = newUser[0];
+    const token = await createToken({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      credits: user.credits,
+      subscriptionTier: user.subscriptionTier,
+    });
 
-  return NextResponse.json({
-    ok: true,
-    user: {
-      id: created.id,
-      email: created.email,
-      name: created.name,
-      role: created.role,
-      credits: created.credits,
-      isUnlimited: created.isUnlimited,
-      plan: created.plan,
-    },
-  });
+    const response = NextResponse.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        credits: user.credits,
+        subscriptionTier: user.subscriptionTier,
+      },
+    });
+
+    // Set cookie on the response object
+    response.cookies.set('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
+
+    return response;
+  } catch (error) {
+    console.error('Registration error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 }

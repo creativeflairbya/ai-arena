@@ -1,107 +1,65 @@
-import { SignJWT, jwtVerify } from "jose";
-import { cookies } from "next/headers";
-import bcrypt from "bcryptjs";
-import { db } from "@/db";
-import { sessions, users, type User } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from '@/db';
+import { users } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+import bcrypt from 'bcryptjs';
+import { SignJWT, jwtVerify } from 'jose';
 
-const SECRET = new TextEncoder().encode(
-  process.env.AUTH_SECRET ||
-    "arena-studio-super-secret-key-change-me-in-production-please-make-it-long-enough",
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 );
 
-const SESSION_COOKIE = "arena_session";
-const SESSION_TTL_DAYS = 30;
-
-export interface SessionPayload {
-  userId: string;
+export interface SessionUser {
+  id: string;
   email: string;
-  role: "master" | "admin" | "user";
-  sessionId: string;
+  name: string | null;
+  role: string;
+  credits: number;
+  subscriptionTier: string | null;
 }
 
-export async function hashPassword(plain: string): Promise<string> {
-  return bcrypt.hash(plain, 10);
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 10);
 }
 
-export async function verifyPassword(
-  plain: string,
-  hash: string,
-): Promise<boolean> {
-  return bcrypt.compare(plain, hash);
+export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  return bcrypt.compare(password, hashedPassword);
 }
 
-export async function createSessionToken(
-  user: Pick<User, "id" | "email" | "role">,
-): Promise<string> {
-  const expiresAt = new Date(
-    Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000,
-  );
-  const sessionId = crypto.randomUUID();
-
-  const token = await new SignJWT({
-    userId: user.id,
-    email: user.email,
-    role: user.role,
-    sessionId,
-  })
-    .setProtectedHeader({ alg: "HS256" })
+export async function createToken(user: SessionUser): Promise<string> {
+  return new SignJWT({ user })
+    .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime(expiresAt)
-    .sign(SECRET);
-
-  await db.insert(sessions).values({
-    id: sessionId,
-    userId: user.id,
-    token,
-    expiresAt,
-  });
-
-  return token;
+    .setExpirationTime('7d')
+    .sign(JWT_SECRET);
 }
 
-export async function setSessionCookie(token: string) {
-  const store = await cookies();
-  store.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: SESSION_TTL_DAYS * 24 * 60 * 60,
-  });
-}
-
-export async function clearSessionCookie() {
-  const store = await cookies();
-  store.delete(SESSION_COOKIE);
-}
-
-export async function getSessionPayload(): Promise<SessionPayload | null> {
-  const store = await cookies();
-  const token = store.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
+export async function verifyToken(token: string): Promise<SessionUser | null> {
   try {
-    const { payload } = await jwtVerify(token, SECRET);
-    return {
-      userId: payload.userId as string,
-      email: payload.email as string,
-      role: payload.role as SessionPayload["role"],
-      sessionId: payload.sessionId as string,
-    };
+    const verified = await jwtVerify(token, JWT_SECRET);
+    return verified.payload.user as SessionUser;
   } catch {
     return null;
   }
 }
 
-export async function getCurrentUser(): Promise<User | null> {
-  const payload = await getSessionPayload();
-  if (!payload) return null;
-  const [u] = await db.select().from(users).where(eq(users.id, payload.userId));
-  return u ?? null;
-}
+export async function authenticateUser(email: string, password: string) {
+  const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  
+  if (user.length === 0) {
+    return null;
+  }
 
-export async function destroySession(sessionId: string) {
-  await db.delete(sessions).where(eq(sessions.id, sessionId));
-}
+  const validPassword = await verifyPassword(password, user[0].password);
+  if (!validPassword) {
+    return null;
+  }
 
-export const SESSION_COOKIE_NAME = SESSION_COOKIE;
+  return {
+    id: user[0].id,
+    email: user[0].email,
+    name: user[0].name,
+    role: user[0].role,
+    credits: user[0].credits,
+    subscriptionTier: user[0].subscriptionTier,
+  };
+}

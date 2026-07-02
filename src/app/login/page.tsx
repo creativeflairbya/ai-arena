@@ -1,191 +1,166 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Sparkles, Mail, Lock, Loader2, AlertCircle, Eye, EyeOff, Shield } from "lucide-react";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Video } from 'lucide-react';
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const [email, setEmail] = useState("master@arena.ai");
-  const [password, setPassword] = useState("Master@2024!");
-  const [show, setShow] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
 
-  function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    startTransition(async () => {
-      try {
-        const res = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: email.trim(), password }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setError(data.error ?? "Login failed");
-          return;
-        }
-        // Successful login: redirect to studio
-        router.push("/studio");
-        router.refresh();
-      } catch (err) {
-        setError("Network error — please try again.");
-      }
-    });
-  }
+    setError('');
+    setLoading(true);
 
-  function fillMaster() {
-    setEmail("master@arena.ai");
-    setPassword("Master@2024!");
-    setError(null);
-  }
+    console.log('Attempting login with:', { email });
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Important for cookies
+        body: JSON.stringify({ email, password }),
+      });
+
+      console.log('Login response status:', response.status);
+
+      const data = await response.json();
+      console.log('Login response data:', data);
+
+      if (!response.ok) {
+        setError(data.error || 'Login failed');
+        setLoading(false);
+        return;
+      }
+
+      // Small delay to ensure cookie is set
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Redirect to studio on successful login
+      console.log('Login successful, redirecting to studio...');
+      window.location.href = '/studio';
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('An error occurred. Please try again.');
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="relative grid min-h-[calc(100vh-4rem)] place-items-center px-4 py-10">
-      <div className="hero-grid absolute inset-0 -z-10" />
-      <div className="grid w-full max-w-5xl gap-10 lg:grid-cols-2">
-        <div className="hidden flex-col justify-center lg:flex">
-          <div className="tag mb-4 w-fit">
-            <Sparkles className="h-3 w-3" /> Welcome back
-          </div>
-          <h1 className="text-4xl font-bold leading-tight">
-            Sign in to <span className="gradient-text">Arena.ai</span>
-          </h1>
-          <p className="mt-3 max-w-md text-white/60">
-            Pick up where you left off. Generate cinematic videos, 4K images and
-            motion graphics with Veo, Seedance, Kling — no API key required.
-          </p>
-          <div className="mt-8 space-y-3 text-sm text-white/70">
-            <div className="flex items-center gap-3">
-              <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/5">🎬</div>
-              <div>
-                <p className="font-semibold text-white">Unlimited free tier</p>
-                <p className="text-white/50">50 credits every month, forever.</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/5">⚡</div>
-              <div>
-                <p className="font-semibold text-white">One-click checkout</p>
-                <p className="text-white/50">Stripe, JazzCash, EasyPaisa, bank transfer.</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/5">🔒</div>
-              <div>
-                <p className="font-semibold text-white">Private by default</p>
-                <p className="text-white/50">Your prompts, your media, your data.</p>
-              </div>
+    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-12">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-xl">
+              <Video className="w-8 h-8" />
             </div>
           </div>
+          <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
+          <p className="mt-2 text-gray-600">Sign in to your AI Studio account</p>
         </div>
 
-        <div className="glass w-full rounded-2xl p-6 sm:p-8">
-          <div className="mb-6 lg:hidden">
-            <h1 className="text-2xl font-bold">
-              Sign in to <span className="gradient-text">Arena.ai</span>
-            </h1>
-          </div>
-          <h2 className="hidden text-xl font-semibold lg:block">Sign in</h2>
-          <p className="mt-1 text-sm text-white/60">
-            New here?{" "}
-            <Link href="/register" className="text-fuchsia-300 hover:underline">
-              Create an account
-            </Link>
-            .
-          </p>
-
-          {error && (
-            <div
-              role="alert"
-              className="mt-5 flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200"
-            >
-              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <div>
-              <label className="label" htmlFor="email">Email</label>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input pl-9"
-                  placeholder="you@example.com"
-                />
+        <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-200">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {error}
               </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+              />
             </div>
 
             <div>
-              <label className="label" htmlFor="password">Password</label>
-              <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
                 <input
-                  id="password"
-                  type={show ? "text" : "password"}
-                  required
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input pl-9 pr-10"
-                  placeholder="••••••••"
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShow((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
-                  aria-label="Toggle password visibility"
-                >
-                  {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                  Remember me
+                </label>
+              </div>
+
+              <div className="text-sm">
+                <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                  Forgot password?
+                </a>
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={pending}
-              className="btn-primary w-full"
-            >
-              {pending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Signing in...
-                </>
-              ) : (
-                <>Sign in</>
-              )}
-            </button>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign In'}
+            </Button>
           </form>
 
-          <div className="mt-6 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4 text-sm">
-            <div className="flex items-center gap-2 font-semibold text-violet-200">
-              <Shield className="h-4 w-4" />
-              Master account pre-filled
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">New to AI Studio?</span>
+              </div>
             </div>
-            <p className="mt-1 text-white/60">
-              <code className="rounded bg-black/40 px-1.5 py-0.5 text-xs">master@arena.ai</code>
-              {" / "}
-              <code className="rounded bg-black/40 px-1.5 py-0.5 text-xs">Master@2024!</code>
-              {" "}— unlimited credits.
-            </p>
-            <button
-              type="button"
-              onClick={fillMaster}
-              className="mt-2 text-xs text-fuchsia-300 hover:underline"
-            >
-              Reset to master credentials →
-            </button>
+
+            <div className="mt-6">
+              <Link href="/register">
+                <Button variant="outline" className="w-full">
+                  Create an Account
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
+
+        <p className="text-center text-sm text-gray-600">
+          By signing in, you agree to our{' '}
+          <a href="#" className="text-blue-600 hover:underline">
+            Terms of Service
+          </a>{' '}
+          and{' '}
+          <a href="#" className="text-blue-600 hover:underline">
+            Privacy Policy
+          </a>
+        </p>
       </div>
     </div>
   );

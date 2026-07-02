@@ -1,286 +1,286 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Check, Loader2, Shield, Sparkles, Wallet, Building2, CreditCard, ChevronRight } from "lucide-react";
-import { PLANS, PAKISTAN_METHODS, INTERNATIONAL_METHODS, type PlanKey } from "@/lib/plans";
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Check, Zap, Crown, Rocket } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-interface Me {
+interface User {
   id: string;
   email: string;
-  name: string;
-  plan: "free" | "pro" | "studio" | "enterprise";
-  role: "master" | "admin" | "user";
+  subscriptionTier: string | null;
 }
 
-type MethodKey = "stripe" | "jazzcash" | "easypaisa" | "bank_transfer" | "manual";
-
 export default function PricingPage() {
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
-  const [me, setMe] = useState<Me | null>(null);
-  const [selected, setSelected] = useState<PlanKey>("pro");
-  const [method, setMethod] = useState<MethodKey>("stripe");
-  const [reference, setReference] = useState("");
-  const [proofNote, setProofNote] = useState("");
-  const [pending, startTransition] = useTransition();
-  const [result, setResult] = useState<{ ok: boolean; message?: string; instructions?: { title: string; details: string[] } | null; transaction?: { id: string; status: string } } | null>(null);
 
   useEffect(() => {
-    fetch("/api/auth/me").then((r) => r.json()).then((d) => setMe(d.user));
+    fetchUser();
   }, []);
 
-  const plan = PLANS.find((p) => p.key === selected) ?? PLANS[0];
-  const isLocal = method === "jazzcash" || method === "easypaisa" || method === "bank_transfer";
-
-  function checkout() {
-    setResult(null);
-    if (!me) {
-      router.push("/login?next=/pricing");
-      return;
-    }
-    if (me.role === "master" || me.role === "admin") {
-      setResult({ ok: false, message: "Master accounts already have unlimited access." });
-      return;
-    }
-    startTransition(async () => {
-      const res = await fetch("/api/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: selected, method, reference, proofNote }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setResult({ ok: false, message: data.error ?? "Checkout failed" });
-        return;
+  const fetchUser = async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      const data = await response.json();
+      if (data.user) {
+        setUser(data.user);
       }
-      setResult({ ok: true, instructions: data.instructions, transaction: data.transaction });
-    });
-  }
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+    }
+  };
+
+  const plans = [
+    {
+      name: 'Free',
+      icon: Zap,
+      price: '$0',
+      period: '/month',
+      description: 'Perfect for trying out AI Studio',
+      credits: '100 credits/month',
+      features: [
+        '100 credits per month',
+        'Access to all AI models',
+        'HD quality output',
+        'Standard processing speed',
+        'Community support',
+        'Basic analytics',
+      ],
+      tier: 'free',
+      buttonText: 'Current Plan',
+      highlighted: false,
+    },
+    {
+      name: 'Basic',
+      icon: Rocket,
+      price: '$19',
+      period: '/month',
+      description: 'Great for individual creators',
+      credits: '1,000 credits/month',
+      features: [
+        '1,000 credits per month',
+        'Access to all AI models',
+        'Full HD quality output',
+        'Faster processing speed',
+        'Priority email support',
+        'Advanced analytics',
+        'Commercial use allowed',
+      ],
+      tier: 'basic',
+      buttonText: 'Upgrade to Basic',
+      highlighted: false,
+    },
+    {
+      name: 'Pro',
+      icon: Crown,
+      price: '$29',
+      period: '/month',
+      description: 'Best for professionals',
+      credits: '2,000 credits/month',
+      features: [
+        '2,000 credits per month',
+        'Access to all premium AI models',
+        '4K quality output',
+        'Priority processing',
+        'Priority chat support',
+        'Full analytics dashboard',
+        'Commercial use allowed',
+        'API access',
+        'Custom watermark removal',
+      ],
+      tier: 'pro',
+      buttonText: 'Upgrade to Pro',
+      highlighted: true,
+    },
+    {
+      name: 'Unlimited',
+      icon: Crown,
+      price: '$99',
+      period: '/month',
+      description: 'For power users and teams',
+      credits: 'Unlimited credits',
+      features: [
+        'Unlimited credits',
+        'Access to all models including beta',
+        '8K quality output',
+        'Fastest processing',
+        'Dedicated support',
+        'Full analytics & reporting',
+        'Commercial use allowed',
+        'Full API access',
+        'Custom integrations',
+        'Team collaboration',
+        'White-label options',
+      ],
+      tier: 'unlimited',
+      buttonText: 'Contact Sales',
+      highlighted: false,
+    },
+  ];
+
+  const handleSubscribe = (tier: string) => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    // In production, integrate with payment gateway
+    alert(`Subscribing to ${tier} plan. Payment integration coming soon!`);
+  };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-3xl text-center">
-        <div className="tag mx-auto w-fit">
-          <Sparkles className="h-3 w-3" /> Pricing
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            Simple, Transparent Pricing
+          </h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Choose the perfect plan for your creative needs. All plans include access to our powerful AI models.
+          </p>
         </div>
-        <h1 className="mt-4 text-4xl font-bold sm:text-5xl">
-          Start free, <span className="gradient-text">scale when ready</span>
-        </h1>
-        <p className="mt-3 text-white/70">
-          Pay in PKR with JazzCash, EasyPaisa, or bank transfer — or use an international card via Stripe.
-        </p>
-      </div>
 
-      <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-        {PLANS.map((p) => {
-          const current = me?.plan === p.key;
-          return (
-            <div
-              key={p.key}
-              className={`relative glass rounded-2xl p-6 ${p.highlight ? "ring-2 ring-violet-400/60" : ""}`}
-            >
-              {p.badge && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 px-3 py-1 text-xs font-semibold">
-                  {p.badge}
-                </span>
-              )}
-              <h3 className="text-lg font-bold">{p.name}</h3>
-              <p className="mt-1 text-sm text-white/60">{p.tagline}</p>
-              <div className="mt-5 flex items-baseline gap-1">
-                <span className="text-3xl font-bold">Rs. {p.pkrPrice.toLocaleString()}</span>
-                <span className="text-sm text-white/50">/mo</span>
+        {/* Payment Methods */}
+        <div className="mb-12 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-200">
+          <h3 className="text-center font-semibold text-gray-900 mb-4">
+            We Accept Multiple Payment Methods
+          </h3>
+          <div className="flex flex-wrap justify-center items-center gap-6">
+            <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm">
+              <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xs">
+                VISA
               </div>
-              <div className="text-xs text-white/50">
-                ${p.usdPrice} USD / mo · {p.monthlyCredits.toLocaleString()} credits
+              <span className="text-sm font-medium">Visa</span>
+            </div>
+            <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm">
+              <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center text-white font-bold text-xs">
+                MC
               </div>
-              <ul className="mt-5 space-y-2 text-sm">
-                {p.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-white/80">
-                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={() => setSelected(p.key)}
-                className={`mt-6 w-full ${
-                  p.highlight ? "btn-primary" : "btn-ghost"
+              <span className="text-sm font-medium">Mastercard</span>
+            </div>
+            <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm">
+              <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center text-white font-bold text-xs">
+                JC
+              </div>
+              <span className="text-sm font-medium">JazzCash</span>
+            </div>
+            <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm">
+              <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center text-white font-bold text-xs">
+                EP
+              </div>
+              <span className="text-sm font-medium">Easypaisa</span>
+            </div>
+            <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm">
+              <div className="w-8 h-8 bg-gray-700 rounded flex items-center justify-center text-white font-bold text-xs">
+                BT
+              </div>
+              <span className="text-sm font-medium">Bank Transfer</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Pricing Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {plans.map((plan) => {
+            const Icon = plan.icon;
+            const isCurrentPlan = user?.subscriptionTier === plan.tier;
+
+            return (
+              <div
+                key={plan.tier}
+                className={`relative bg-white rounded-2xl shadow-lg transition-transform hover:scale-105 ${
+                  plan.highlighted ? 'ring-2 ring-blue-600 transform scale-105' : ''
                 }`}
               >
-                {current ? "Current plan" : p.pkrPrice === 0 ? "Stay on Free" : "Choose " + p.name}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-14 grid gap-6 lg:grid-cols-[1fr_1.1fr]">
-        <div className="glass rounded-2xl p-6">
-          <h3 className="flex items-center gap-2 text-lg font-semibold">
-            <Shield className="h-5 w-5" /> Checkout
-          </h3>
-          <p className="mt-1 text-sm text-white/60">
-            You're subscribing to{" "}
-            <span className="font-semibold text-white">{plan.name}</span> for{" "}
-            <span className="font-mono">Rs. {plan.pkrPrice.toLocaleString()}</span> / month.
-          </p>
-
-          <div className="mt-5">
-            <label className="label">Payment method</label>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {INTERNATIONAL_METHODS.map((m) => (
-                <button
-                  key={m.key}
-                  onClick={() => setMethod(m.key === "stripe_paypal" ? "stripe" : (m.key as MethodKey))}
-                  className={`flex items-start gap-3 rounded-xl border p-3 text-left text-sm transition ${
-                    method === "stripe"
-                      ? "border-violet-400/60 bg-violet-500/10"
-                      : "border-white/10 bg-white/5 hover:bg-white/10"
-                  }`}
-                >
-                  <span className="text-2xl">{m.icon}</span>
-                  <div>
-                    <div className="font-semibold">{m.name}</div>
-                    <div className="text-xs text-white/50">{m.description}</div>
-                  </div>
-                </button>
-              ))}
-              {PAKISTAN_METHODS.map((m) => (
-                <button
-                  key={m.key}
-                  onClick={() => setMethod(m.key as MethodKey)}
-                  className={`flex items-start gap-3 rounded-xl border p-3 text-left text-sm transition ${
-                    method === m.key
-                      ? "border-violet-400/60 bg-violet-500/10"
-                      : "border-white/10 bg-white/5 hover:bg-white/10"
-                  }`}
-                >
-                  <span className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-500/15 text-emerald-300 font-bold">
-                    {m.icon}
-                  </span>
-                  <div>
-                    <div className="font-semibold">{m.name}</div>
-                    <div className="text-xs text-white/50">{m.description}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {isLocal && (
-            <div className="mt-5 space-y-3">
-              <div>
-                <label className="label">Transaction reference / TID</label>
-                <input
-                  className="input"
-                  value={reference}
-                  onChange={(e) => setReference(e.target.value)}
-                  placeholder="e.g. 8XY1234ABC"
-                />
-              </div>
-              <div>
-                <label className="label">Note (optional)</label>
-                <textarea
-                  className="textarea"
-                  value={proofNote}
-                  onChange={(e) => setProofNote(e.target.value)}
-                  placeholder="Your account number, screenshot reference..."
-                />
-              </div>
-            </div>
-          )}
-
-          {result && (
-            <div
-              className={`mt-5 rounded-xl border p-4 text-sm ${
-                result.ok
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
-                  : "border-red-500/30 bg-red-500/10 text-red-100"
-              }`}
-            >
-              {result.ok ? (
-                <>
-                  <p className="font-semibold">Order placed! Transaction: {result.transaction?.id}</p>
-                  {result.instructions && (
-                    <div className="mt-2">
-                      <p className="font-medium text-white">{result.instructions.title}</p>
-                      <ul className="mt-1 list-disc pl-5 text-white/80">
-                        {result.instructions.details.map((d) => (
-                          <li key={d}>{d}</li>
-                        ))}
-                      </ul>
+                {plan.highlighted && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-bold px-4 py-1 rounded-full">
+                      MOST POPULAR
                     </div>
-                  )}
-                </>
-              ) : (
-                <p>{result.message}</p>
-              )}
-            </div>
-          )}
+                  </div>
+                )}
 
-          <button
-            onClick={checkout}
-            disabled={pending || plan.pkrPrice === 0}
-            className="btn-primary mt-6 w-full"
-          >
-            {pending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Processing...
-              </>
-            ) : (
-              <>
-                Continue with{" "}
-                {isLocal
-                  ? PAKISTAN_METHODS.find((m) => m.key === method)?.name ?? "Local"
-                  : "Card / PayPal"}
-                <ChevronRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
-          {!me && (
-            <p className="mt-3 text-center text-xs text-white/50">
-              You'll be asked to sign in first.
-            </p>
-          )}
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <Icon className="w-6 h-6 text-blue-600" />
+                      <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+                    </div>
+                    {isCurrentPlan && (
+                      <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded">
+                        Active
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mb-4">
+                    <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
+                    <span className="text-gray-600">{plan.period}</span>
+                  </div>
+
+                  <p className="text-gray-600 mb-4">{plan.description}</p>
+
+                  <div className="mb-6">
+                    <div className="inline-flex items-center bg-blue-50 text-blue-600 text-sm font-semibold px-3 py-1 rounded-full">
+                      {plan.credits}
+                    </div>
+                  </div>
+
+                  <ul className="space-y-3 mb-6">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex items-start">
+                        <Check className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm text-gray-600">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Button
+                    onClick={() => handleSubscribe(plan.tier)}
+                    disabled={isCurrentPlan}
+                    variant={plan.highlighted ? 'default' : 'outline'}
+                    className="w-full"
+                  >
+                    {isCurrentPlan ? 'Current Plan' : plan.buttonText}
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        <div className="space-y-4">
-          <div className="glass rounded-2xl p-6">
-            <h3 className="flex items-center gap-2 text-lg font-semibold">
-              <Wallet className="h-5 w-5" /> Pakistan local payments
-            </h3>
-            <p className="mt-2 text-sm text-white/60">
-              Pay in PKR with the methods you already use. Submit your reference
-              and our team will confirm within minutes (often instantly).
-            </p>
-            <ul className="mt-4 space-y-2 text-sm text-white/80">
-              <li>• JazzCash — mobile wallet transfer</li>
-              <li>• EasyPaisa — mobile wallet transfer</li>
-              <li>• Bank transfer — HBL, Meezan, UBL, MCB & more</li>
-            </ul>
-          </div>
-          <div className="glass rounded-2xl p-6">
-            <h3 className="flex items-center gap-2 text-lg font-semibold">
-              <Building2 className="h-5 w-5" /> International billing
-            </h3>
-            <p className="mt-2 text-sm text-white/60">
-              Pay with Visa, Mastercard, Amex or PayPal via Stripe. Your
-              subscription activates instantly and credits are added in real-time.
-            </p>
-          </div>
-          <div className="glass rounded-2xl p-6">
-            <h3 className="flex items-center gap-2 text-lg font-semibold">
-              <CreditCard className="h-5 w-5" /> Need an invoice?
-            </h3>
-            <p className="mt-2 text-sm text-white/60">
-              Every payment generates a tax invoice (FBR compliant for
-              Pakistani customers). Manage all your receipts from your{" "}
-              <Link href="/account" className="text-fuchsia-300 hover:underline">
-                account page
-              </Link>
-              .
-            </p>
+        {/* FAQ */}
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+            Frequently Asked Questions
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">What are credits?</h3>
+              <p className="text-gray-600 text-sm">
+                Credits are used to generate AI content. Each type of generation uses different amounts:
+                1 credit for images, 10 for videos.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">Can I cancel anytime?</h3>
+              <p className="text-gray-600 text-sm">
+                Yes! You can cancel your subscription at any time. You'll retain access until the end of your billing period.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">What payment methods do you accept?</h3>
+              <p className="text-gray-600 text-sm">
+                We accept international cards (Visa, Mastercard) and Pakistani payment methods (JazzCash, Easypaisa, Bank Transfer).
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">Do credits roll over?</h3>
+              <p className="text-gray-600 text-sm">
+                Monthly credits reset each billing cycle. Unused credits don't roll over to the next month.
+              </p>
+            </div>
           </div>
         </div>
       </div>

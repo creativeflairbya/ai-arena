@@ -1,151 +1,240 @@
-import { db } from "@/db";
-import { sql } from "drizzle-orm";
-import Link from "next/link";
-import { Sparkles, Video, Image as ImageIcon, Wand2, Zap, ShieldCheck, Globe, Star, ArrowRight, Cpu, Layers } from "lucide-react";
-import ExploreGrid from "@/components/ExploreGrid";
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Video, Image, Sparkles, Zap, Globe, Shield } from 'lucide-react';
 
-export const dynamic = "force-dynamic";
-
-export default async function HomePage() {
-  // Touch the DB so any health check sees a successful query
-  await db.execute(sql`select 1`);
-
+export default function Home() {
   return (
-    <div className="relative">
-      <section className="relative overflow-hidden">
-        <div className="hero-grid absolute inset-0 -z-10 opacity-70" />
-        <div className="mx-auto max-w-7xl px-4 pt-16 pb-20 sm:px-6 sm:pt-24 sm:pb-28 lg:px-8 lg:pt-32">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="tag mx-auto w-fit">
-              <Sparkles className="h-3 w-3" />
-              New · Veo 2 · Seedance · Kling — all in one studio
-            </div>
-            <h1 className="mt-6 text-4xl font-bold leading-[1.05] sm:text-6xl lg:text-7xl">
-              The <span className="gradient-text">unlimited</span> AI studio for video & image
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 text-white">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
+          <div className="text-center space-y-8">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight">
+              Create Stunning AI Media
+              <br />
+              <span className="bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
+                In Seconds
+              </span>
             </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-base text-white/70 sm:text-lg">
-              Generate cinematic videos, 4K images and motion graphics with the
-              world's best models — no API keys, no setup. Free tier included,
-              with a paid plan when you scale.
+            <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto">
+              Professional AI-powered image and video generation. Powered by Veo, Kling, Seedance, and more.
             </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/register" className="btn-primary w-full sm:w-auto">
-                Start free <ArrowRight className="h-4 w-4" />
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Link href="/register">
+                <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 text-lg px-8 py-6 h-auto">
+                  Start Creating Free
+                </Button>
               </Link>
-              <Link href="/studio" className="btn-ghost w-full sm:w-auto">
-                Open the studio
+              <Link href="/pricing">
+                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8 py-6 h-auto">
+                  View Pricing
+                </Button>
               </Link>
             </div>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-white/50">
-              <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> No API key required</span>
-              <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> Pakistan & global billing</span>
-              <span className="flex items-center gap-1.5"><Star className="h-3.5 w-3.5" /> Free 50 credits/mo</span>
-            </div>
-          </div>
-
-          <div className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {[
-              { icon: Video, label: "Text → Video", color: "from-violet-500 to-fuchsia-500" },
-              { icon: ImageIcon, label: "Text → Image", color: "from-fuchsia-500 to-pink-500" },
-              { icon: Wand2, label: "Image → Video", color: "from-cyan-500 to-blue-500" },
-              { icon: Layers, label: "Enhance & Upscale", color: "from-amber-500 to-orange-500" },
-            ].map((t) => (
-              <div
-                key={t.label}
-                className="glass rounded-2xl p-4 text-center"
-              >
-                <div className={`mx-auto grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br ${t.color}`}>
-                  <t.icon className="h-5 w-5 text-white" />
-                </div>
-                <p className="mt-2 text-sm font-medium text-white">{t.label}</p>
+            <div className="flex items-center justify-center space-x-8 text-sm">
+              <div className="flex items-center space-x-2">
+                <Sparkles className="w-5 h-5" />
+                <span>100 Free Credits</span>
               </div>
-            ))}
+              <div className="flex items-center space-x-2">
+                <Zap className="w-5 h-5" />
+                <span>No Credit Card</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Shield className="w-5 h-5" />
+                <span>Cancel Anytime</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="features" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mb-10 max-w-2xl">
-          <h2 className="text-3xl font-bold sm:text-4xl">
-            Everything you need to <span className="gradient-text">create</span>
+      {/* Features Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Powerful AI Generation Tools
+            </h2>
+            <p className="text-xl text-gray-600">
+              Everything you need to create professional media content
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Feature 1 */}
+            <div className="p-6 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
+              <div className="bg-blue-600 text-white p-3 rounded-lg w-fit mb-4">
+                <Image className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Text to Image
+              </h3>
+              <p className="text-gray-600">
+                Generate stunning images from text descriptions using FLUX and other top models.
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="p-6 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200">
+              <div className="bg-purple-600 text-white p-3 rounded-lg w-fit mb-4">
+                <Video className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Text to Video
+              </h3>
+              <p className="text-gray-600">
+                Create professional videos from prompts with Veo, Kling, and Seedance.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="p-6 rounded-xl bg-gradient-to-br from-pink-50 to-pink-100 border border-pink-200">
+              <div className="bg-pink-600 text-white p-3 rounded-lg w-fit mb-4">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Image to Video
+              </h3>
+              <p className="text-gray-600">
+                Animate your images with advanced AI models. Bring static images to life.
+              </p>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="p-6 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200">
+              <div className="bg-orange-600 text-white p-3 rounded-lg w-fit mb-4">
+                <Globe className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Multiple Providers
+              </h3>
+              <p className="text-gray-600">
+                Access to Veo, Kling, Seedance, FLUX, and more cutting-edge models.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Teaser */}
+      <section className="py-20 bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="text-xl text-gray-600">
+              Start free, scale as you grow
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {/* Free Tier */}
+            <div className="bg-white p-8 rounded-2xl border-2 border-gray-200 shadow-sm">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Free</h3>
+              <div className="mb-6">
+                <span className="text-4xl font-bold">$0</span>
+                <span className="text-gray-600">/month</span>
+              </div>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-start">
+                  <span className="text-green-500 mr-2">✓</span>
+                  <span className="text-gray-600">100 credits/month</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-green-500 mr-2">✓</span>
+                  <span className="text-gray-600">All AI models</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-green-500 mr-2">✓</span>
+                  <span className="text-gray-600">HD quality</span>
+                </li>
+              </ul>
+              <Link href="/register">
+                <Button variant="outline" className="w-full">
+                  Get Started
+                </Button>
+              </Link>
+            </div>
+
+            {/* Pro Tier */}
+            <div className="bg-gradient-to-br from-blue-600 to-purple-600 p-8 rounded-2xl shadow-xl transform scale-105">
+              <div className="bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full w-fit mb-4">
+                MOST POPULAR
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-white">$29</span>
+                <span className="text-blue-100">/month</span>
+              </div>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-start">
+                  <span className="text-green-300 mr-2">✓</span>
+                  <span className="text-white">2,000 credits/month</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-green-300 mr-2">✓</span>
+                  <span className="text-white">Priority processing</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-green-300 mr-2">✓</span>
+                  <span className="text-white">4K quality</span>
+                </li>
+              </ul>
+              <Link href="/pricing">
+                <Button className="w-full bg-white text-blue-600 hover:bg-blue-50">
+                  Upgrade Now
+                </Button>
+              </Link>
+            </div>
+
+            {/* Unlimited Tier */}
+            <div className="bg-white p-8 rounded-2xl border-2 border-gray-200 shadow-sm">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Unlimited</h3>
+              <div className="mb-6">
+                <span className="text-4xl font-bold">$99</span>
+                <span className="text-gray-600">/month</span>
+              </div>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-start">
+                  <span className="text-green-500 mr-2">✓</span>
+                  <span className="text-gray-600">Unlimited credits</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-green-500 mr-2">✓</span>
+                  <span className="text-gray-600">Fastest processing</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-green-500 mr-2">✓</span>
+                  <span className="text-gray-600">8K quality</span>
+                </li>
+              </ul>
+              <Link href="/pricing">
+                <Button variant="outline" className="w-full">
+                  Contact Sales
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            Ready to Create Amazing Content?
           </h2>
-          <p className="mt-3 text-white/60">
-            One studio. Every model. Every workflow. No juggling API keys.
+          <p className="text-xl text-blue-100 mb-8">
+            Join thousands of creators using AI Studio to bring their ideas to life
           </p>
-        </div>
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {[
-            { icon: Cpu, title: "Best-in-class models", text: "Veo 2 for cinematic, Seedance for motion, Kling for realism, plus our in-house Arena Pro model." },
-            { icon: Zap, title: "Blazing fast queue", text: "Smart GPU routing gives you the fastest path for every request, every time." },
-            { icon: Wand2, title: "Image → Video", text: "Upload a single frame and watch it come alive with our 6-credit i2v engine." },
-            { icon: ShieldCheck, title: "Private & secure", text: "Your prompts and media are encrypted at rest. You own everything you create." },
-            { icon: Globe, title: "Built for Pakistan", text: "Pay in PKR with JazzCash, EasyPaisa, or any Pakistani bank. International cards welcome too." },
-            { icon: Layers, title: "Bulk generation", text: "Generate variations in a single click. Pick the best take and ship." },
-          ].map((f) => (
-            <div key={f.title} className="glass rounded-2xl p-6 transition hover:bg-white/[0.06]">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 text-fuchsia-300">
-                <f.icon className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 text-lg font-semibold">{f.title}</h3>
-              <p className="mt-1.5 text-sm text-white/60">{f.text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section id="models" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mb-10 max-w-2xl">
-          <h2 className="text-3xl font-bold sm:text-4xl">
-            Pick the <span className="gradient-text">perfect model</span>
-          </h2>
-          <p className="mt-3 text-white/60">
-            Switch between models in a click. Each model has its own vibe.
-          </p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { name: "Veo 2", tag: "Google DeepMind", desc: "Cinematic realism, 1080p video, top-tier physics." },
-            { name: "Seedance", tag: "ByteDance", desc: "Snappy motion, great for ads, reels and dance clips." },
-            { name: "Kling 1.6", tag: "Kuaishou", desc: "Photoreal people, complex choreography, multi-shot." },
-            { name: "Arena Pro", tag: "In-house", desc: "Our optimized multi-model blend. Free with every plan." },
-          ].map((m) => (
-            <div key={m.name} className="glass rounded-2xl p-5">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">{m.name}</h3>
-                <span className="tag-cyan tag">{m.tag}</span>
-              </div>
-              <p className="mt-2 text-sm text-white/60">{m.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mb-10 flex items-end justify-between">
-          <div>
-            <h2 className="text-3xl font-bold sm:text-4xl">Latest from the <span className="gradient-text">community</span></h2>
-            <p className="mt-2 text-white/60">Fresh creations from Arena.ai creators around the world.</p>
-          </div>
-          <Link href="/explore" className="hidden text-sm text-fuchsia-300 hover:underline sm:block">View all →</Link>
-        </div>
-        <ExploreGrid />
-      </section>
-
-      <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="glass overflow-hidden rounded-3xl p-8 sm:p-12 text-center">
-          <h2 className="text-3xl font-bold sm:text-4xl">Ready to make something <span className="gradient-text">incredible</span>?</h2>
-          <p className="mx-auto mt-3 max-w-xl text-white/70">
-            Join 12,000+ creators, marketers and studios using Arena.ai to ship
-            campaigns in hours, not weeks.
-          </p>
-          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link href="/register" className="btn-primary w-full sm:w-auto">
-              Create free account <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link href="/pricing" className="btn-ghost w-full sm:w-auto">
-              See pricing
-            </Link>
-          </div>
+          <Link href="/register">
+            <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 text-lg px-8 py-6 h-auto">
+              Start Creating for Free
+            </Button>
+          </Link>
         </div>
       </section>
     </div>

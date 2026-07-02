@@ -1,89 +1,97 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
-import { db } from "@/db";
-import { users } from "@/db/schema";
-import { desc, eq } from "drizzle-orm";
-import { z } from "zod";
-import { hashPassword } from "@/lib/auth";
-
-async function requireAdmin() {
-  const u = await getCurrentUser();
-  if (!u || (u.role !== "master" && u.role !== "admin")) return null;
-  return u;
-}
-
-const COLORS = ["#8b5cf6", "#ec4899", "#06b6d4", "#10b981", "#f59e0b", "#ef4444", "#3b82f6", "#a855f7"];
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/session';
+import { db } from '@/db';
+import { users } from '@/db/schema';
+import { hashPassword } from '@/lib/auth';
+import { desc } from 'drizzle-orm';
 
 export async function GET() {
-  if (!(await requireAdmin())) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-  const rows = await db.select().from(users).orderBy(desc(users.createdAt));
-  return NextResponse.json({
-    items: rows.map((u) => ({
-      id: u.id,
-      email: u.email,
-      name: u.name,
-      role: u.role,
-      plan: u.plan,
-      credits: u.credits,
-      isUnlimited: u.isUnlimited,
-      isActive: u.isActive,
-      avatarColor: u.avatarColor,
-      createdAt: u.createdAt,
-    })),
-  });
-}
-
-const CreateBody = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  name: z.string().min(2),
-  plan: z.enum(["free", "pro", "studio", "enterprise"]).default("free"),
-  credits: z.number().int().min(0).default(50),
-  isUnlimited: z.boolean().default(false),
-  role: z.enum(["user", "admin", "master"]).default("user"),
-});
-
-export async function POST(req: NextRequest) {
-  if (!(await requireAdmin())) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-  let body: unknown;
   try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-  const parsed = CreateBody.safeParse(body);
-  if (!parsed.success) {
+    await requireAdmin();
+    
+    const allUsers = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        role: users.role,
+        credits: users.credits,
+        subscriptionTier: users.subscriptionTier,
+        subscriptionStatus: users.subscriptionStatus,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .orderBy(desc(users.createdAt));
+
+    return NextResponse.json({
+      users: allUsers,
+    });
+  } catch (error: any) {
+    console.error('Fetch users error:', error);
+    
+    if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Invalid input" },
-      { status: 400 },
+      { error: 'Internal server error' },
+      { status: 500 }
     );
   }
-  const { email, password, name, plan, credits, isUnlimited, role } = parsed.data;
+}
 
-  const existing = await db.select().from(users).where(eq(users.email, email.toLowerCase()));
-  if (existing.length > 0) {
-    return NextResponse.json({ error: "Email already exists" }, { status: 409 });
+export async function POST(request: NextRequest) {
+  try {
+    await requireAdmin();
+    const body = await request.json();
+
+    const { email, password, name, role, credits, subscriptionTier } = body;
+
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: 'Email and password are required' },
+        { status: 400 }
+      );
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    const newUser = await db.insert(users).values({
+      email,
+      password: hashedPassword,
+      name: name || null,
+      role: role || 'user',
+      credits: credits || 100,
+      subscriptionTier: subscriptionTier || 'free',
+      subscriptionStatus: 'active',
+    }).returning();
+
+    return NextResponse.json({
+      user: {
+        id: newUser[0].id,
+        email: newUser[0].email,
+        name: newUser[0].name,
+        role: newUser[0].role,
+        credits: newUser[0].credits,
+        subscriptionTier: newUser[0].subscriptionTier,
+      },
+    });
+  } catch (error: any) {
+    console.error('Create user error:', error);
+    
+    if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
-
-  const passwordHash = await hashPassword(password);
-  const [created] = await db
-    .insert(users)
-    .values({
-      email: email.toLowerCase(),
-      passwordHash,
-      name,
-      role,
-      plan,
-      credits: isUnlimited ? 999999 : credits,
-      isUnlimited,
-      isActive: true,
-      avatarColor: COLORS[Math.floor(Math.random() * COLORS.length)],
-    })
-    .returning();
-
-  return NextResponse.json({ ok: true, user: { id: created.id, email: created.email } });
 }
